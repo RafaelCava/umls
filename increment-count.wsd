@@ -1,0 +1,40 @@
+@startuml Fluxo - Envio de Mensagem e Cálculo de Status Billing
+
+title Fluxo - Envio de Mensagem e Cálculo de Status Billing
+|megasac|
+start
+:Evento de enviar/receber mensagem;
+if (Período válido de 24 horas?) then (sim)
+  :Não incrementa sessões;
+  end
+|mis-message-count-consumer|
+else (não)
+  :Localiza a empresa;
+  :Localiza a integração que enviou/recebeu mensagem de dentro da empresa;
+  :Localiza o access_token da integração;
+  :Decodifica o access_token e obtem o nome do app da integração;
+  :Realiza requisição para se autentica como partner;
+|Broker/Gupshup|
+  :Retorna um token de autenticação de partner (valido por 24 horas);
+|mis-message-count-consumer|
+  :Realizar uma requisição para listar todos os apps;
+|Broker/Gupshup|
+  :Retorna todos os apps;
+|mis-message-count-consumer|
+  :Localiza o app pelo nome obtido de dentro do token;
+  :Obtem id do app da integração;
+  :Realizar uma requisição para se autenticar como partner do app da integração;
+|Broker/Gupshup|
+  :Retorna um token de autenticação de partner do app (valido por 24 horas);
+|mis-message-count-consumer|
+  :Realizar requisição para obter status billing do app por periodo;
+|Broker/Gupshup|
+  :Retorna os status de utilização do app no período informado;
+|mis-message-count-consumer|
+  :Somar todos os status recebidos;
+  :Chegar ao resultado total;
+endif
+:Incrementa contador com resultado total;
+:Salva resultado no banco de dados de acordo com cada categoria;
+end
+@enduml
