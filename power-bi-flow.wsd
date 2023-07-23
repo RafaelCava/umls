@@ -1,0 +1,63 @@
+@startuml powerbi
+
+actor Cliente as cliente
+participant "Power-BI" as bi
+participant "tallos-chat-app-v2" as frontend
+participant "mis-power-bi-data" as backend
+database "tallos-megasac" as db
+database "redis" as redis
+
+== Etapas para criação do aplicativo Power BI ==
+
+activate frontend
+
+cliente -> frontend: Configura e cria aplicativo Power BI (URL GET)
+frontend --> cliente: Retorna URL do aplicativo
+
+deactivate frontend
+
+== Etapas para validação da requisição ==
+activate backend
+
+bi -> backend: Faz request para URL
+
+activate redis
+
+backend -> redis: Valida se existe algum documento no Redis sobre o ator
+redis --> backend: Retorna se existe ou não
+
+deactivate redis
+
+== Etapas de retorno para o BI ==
+alt "O Rate limit foi atingido (Redis retornou um documento)"
+
+  backend --> bi: Retorna erro 429 (Too Many Requests)
+
+else "O Rate limit não foi atingido (Redis não encontra o documento)"
+  activate redis
+
+  backend -> redis: Cria documento no Redis sobre o ator com expiração de 60 segundos
+
+  deactivate redis
+  
+  backend -> backend: Valida dados via query params
+  backend -> db: Realiza o find no banco de dados
+
+  activate db
+
+  db --> backend: Retorna os dados do banco de dados
+
+  backend --> bi: Retorna a resposta para o bi do cliente
+  
+  activate bi
+
+  deactivate db
+  
+  deactivate backend
+end
+
+cliente <-- bi: Gera dashboard com os dados da Tallos
+
+deactivate bi
+
+@enduml
