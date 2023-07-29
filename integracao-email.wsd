@@ -1,0 +1,37 @@
+@startuml integração email
+
+actor "Admin" as admin #black
+participant "tallos-chat-app-v2" as frontend #lightblue
+participant "kong" as kong #LightPink
+box "Internal Services" #LightBlue
+participant "megasac-api" as megasac #LightGreen
+participant "tallos-sso" as sso #LightGrey
+end box
+box "Databases" #LightYellow
+database "tallos-megasac" as dbTallos #LightCoral
+database "email-database" as dbEmail #LightCoral
+end box
+== Integração Email Parte 1 ==
+autonumber
+admin -[#red]> frontend: Insere os dados e inicia o processo de integração
+activate frontend
+frontend -> kong: Requisição de integração
+activate kong
+kong <--> megasac: Redirect
+activate megasac
+megasac <-[#blue]> sso: Envia os dados via GRPC\npara o serviço do SSO para gerar um token
+activate sso
+sso <--> dbTallos: Realiza validação dos dados
+sso <-> sso: Realiza validação do email
+sso <-> sso: Gera um token usando o cid, company id e o email
+sso <--> dbEmail: Cria um documento com os dados da integração
+sso -[#blue]-> megasac: Retorna o token
+deactivate sso
+megasac <--> dbTallos: Atualiza o slot da integração solicitada com os dados recebidos da requisição e o token(?)
+megasac -> megasac: Alerta o socket do evento de integração realizada
+kong -> frontend: Ao receber o alerta o frontend atualiza\na tela com os dados recebidos via socket
+deactivate megasac
+deactivate kong
+frontend --> admin: Mostra os dados da integração na tela\n(caso tenha sido realizada com sucesso)
+deactivate frontend
+@enduml
