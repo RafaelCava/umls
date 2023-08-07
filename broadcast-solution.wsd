@@ -1,0 +1,48 @@
+@startuml escalar broadcast-api
+
+title Solução para escalar a broadcast-api
+
+actor Cliente as ct #Green
+participant "Tallos-Chat-App-v2" as front #LightBlue
+participant "Kong" as kg #LightPink
+
+box "Internal Services"
+actor Cron as cr #black
+participant "megasac-api" as mcApi #LightCoral
+participant "broadcast-api" as bcApi #LightCoral
+queue "Kafka" as Kafka
+end box
+
+box "Databases"
+database "tallos-megasac" as dbTallos #LightGreen
+end box
+
+autonumber
+ct -> front: Cria o agendamento de uma campanha
+activate front
+front -> kg: Envia a requisição para o megasac
+activate kg
+kg <--> mcApi: REDIRECT
+activate mcApi
+mcApi <--> dbTallos: Processa e salva os dados do agendamento
+activate dbTallos
+deactivate dbTallos
+deactivate mcApi
+kg -> front: informa o sucesso no processo 
+deactivate kg
+front --> ct: informa o sucesso no processo 
+deactivate front
+
+cr --> bcApi: periodicamente solicita a\nbroadcast-api para validar\na existencia de campanhas
+activate bcApi
+bcApi <--> dbTallos: Realiza um find para localizar\ncampanhas a serem disparadas
+activate dbTallos
+bcApi --> dbTallos: Atualiza o status das\ncampanhas que serão disparadas
+deactivate dbTallos
+bcApi --> Kafka: Escreve as campanhas uma por\numa no topico de broadcast
+activate Kafka
+
+bcApi <--> Kafka: Consome do topico do broadcast o id da campanha e processa sob demanda
+deactivate bcApi
+deactivate Kafka
+@enduml
