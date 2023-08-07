@@ -22,8 +22,8 @@ activate megasac
 megasac <-[#blue]> sso: Envia os dados via GRPC\npara o serviço do SSO para gerar um token
 activate sso
 sso <--> dbTallos: Realiza validação dos dados
-sso <-> sso: Realiza validação do email
-sso <-> sso: Gera um token usando o cid, company id e o email
+sso -> sso: Realiza validação do email
+sso -> sso: Gera um token usando o cid, company id e o email
 sso <--> dbEmail: Cria um documento com os dados da integração
 sso -[#blue]-> megasac: Retorna o token
 deactivate sso
